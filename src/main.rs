@@ -1,6 +1,22 @@
-use image::Rgb;
+use image::{DynamicImage, Rgb};
 use std::collections::HashMap;
-use std::fs;
+use std::path::PathBuf;
+use std::{fs, process};
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(short, long)]
+    size: String,
+
+    #[arg(short, long)]
+    img: PathBuf,
+
+    #[arg(short, long)]
+    output: PathBuf,
+}
+
 
 fn hex_to_rgb(hex: &str) -> Rgb<u8> {
     let hex = hex.trim_start_matches("#");
@@ -34,6 +50,20 @@ fn get_nearest_color(pixel: &Rgb<u8>, color_map: &HashMap<Rgb<u8>, i32> ) -> i32
 }
 
 fn main() {
+
+    let args = Args::parse();
+    let parts: Vec<&str> = args.size.split("x").collect();
+    
+    if parts.len() != 2 {
+        println!("invalid image size specified");
+        process::exit(1);
+    }
+
+
+
+    let width: u32 = parts[0].parse().expect("invalid image size specified");
+    let height: u32 = parts[1].parse().expect("invalid image size specified");
+
     let mut color_map = HashMap::new();
     color_map.insert(hex_to_rgb("#FFFFFF"), 1);
     color_map.insert(hex_to_rgb("#FF2121"), 2);
@@ -51,9 +81,39 @@ fn main() {
     color_map.insert(hex_to_rgb("#91463D"), 14);
     color_map.insert(hex_to_rgb("#000000"), 15);
 
+    if args.img.is_dir() {
+        let paths = std::fs::read_dir(&args.img).expect("invalid path specified");
 
-    let mut img = image::open("cat.jpg").unwrap();
-    img = img.resize(160, 120, image::imageops::FilterType::Nearest);
+        let mut anim_string = "[".to_string();
+
+        for path in paths {
+            let mut img = image::open(path.expect("invalid path specified").path()).unwrap();
+            img = img.resize(width, height, image::imageops::FilterType::Nearest);
+
+            let img_string = image_to_makecode_string(img, &color_map);
+
+            anim_string += &img_string;
+            anim_string += ",";
+
+        }
+        anim_string += "]";
+
+        fs::write(&args.output, anim_string).unwrap();
+        
+    } else {
+        let mut img = image::open(&args.img).unwrap();
+        img = img.resize(width, height, image::imageops::FilterType::Nearest);
+    
+        let img_string = image_to_makecode_string(img, &color_map);
+    
+        fs::write(&args.output, img_string).unwrap();
+    }
+
+
+}
+
+fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>) -> String {
+    
     let img = img.to_rgb8();
 
     let mut img_string = "img`".to_string();
@@ -69,5 +129,6 @@ fn main() {
         img_string += &x_line;
     }
     img_string += "`";
-    fs::write("img.txt", img_string).unwrap();
+
+    return img_string;
 }

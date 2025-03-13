@@ -1,10 +1,18 @@
-use image::{DynamicImage, Rgb};
+use image::{DynamicImage, GenericImageView, Rgb};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::{fs, process};
-use clap::Parser;
 
-#[derive(Parser, Debug)]
+
+use pest::Parser;
+use pest_derive::Parser;
+
+#[derive(Parser)]
+#[grammar = "colors.pest"]
+pub struct ColorParser;
+
+
+#[derive(clap::Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
     #[arg(short, long)]
@@ -15,6 +23,9 @@ struct Args {
 
     #[arg(short, long)]
     output: PathBuf,
+
+    #[arg(short, long)]
+    colormap: String,
 }
 
 
@@ -51,7 +62,33 @@ fn get_nearest_color(pixel: &Rgb<u8>, color_map: &HashMap<Rgb<u8>, i32> ) -> i32
 
 fn main() {
 
-    let args = Args::parse();
+    let unparsed_colors = fs::read_to_string("colors.txt").expect("Failed to read colors.txt");
+    let color_file = ColorParser::parse(Rule::file, &unparsed_colors).expect("Failed to parse color file").next().unwrap();
+
+    let mut color_maps = HashMap::new();
+
+    for palette in color_file.into_inner() {
+        let mut palette_name = String::new();
+        let mut color_map = HashMap::new();
+        for (i, r) in palette.into_inner().into_iter().enumerate() {
+            match r.as_rule() {
+                Rule::palette_name => {
+                    palette_name = r.as_str().to_string();
+                    // println!("{}", r.as_str())
+                },
+                Rule::hex_color => {
+                    // println!("{}", r.as_str());
+                    color_map.insert(hex_to_rgb(r.as_str()), i as i32);
+                }
+                _ => {}
+            }
+        }
+        
+        color_maps.insert(palette_name, color_map);
+    }
+
+
+    let args = <Args as clap::Parser>::parse();
     let parts: Vec<&str> = args.size.split("x").collect();
     
     if parts.len() != 2 {
@@ -64,23 +101,8 @@ fn main() {
     let width: u32 = parts[0].parse().expect("invalid image size specified");
     let height: u32 = parts[1].parse().expect("invalid image size specified");
 
-    let mut color_map = HashMap::new();
-    color_map.insert(hex_to_rgb("#FFFFFF"), 1);
-    color_map.insert(hex_to_rgb("#FF2121"), 2);
-    color_map.insert(hex_to_rgb("#FF93C4"), 3);
-    color_map.insert(hex_to_rgb("#FF8135"), 4);
-    color_map.insert(hex_to_rgb("#FFF609"), 5);
-    color_map.insert(hex_to_rgb("#249CA3"), 6);
-    color_map.insert(hex_to_rgb("#78DC52"), 7);
-    color_map.insert(hex_to_rgb("#003FAD"), 8);
-    color_map.insert(hex_to_rgb("#87F2FF"), 9);
-    color_map.insert(hex_to_rgb("#8E2EC4"), 10);
-    color_map.insert(hex_to_rgb("#A4839F"), 11);
-    color_map.insert(hex_to_rgb("#5C406C"), 12);
-    color_map.insert(hex_to_rgb("#E5CDC4"), 13);
-    color_map.insert(hex_to_rgb("#91463D"), 14);
-    color_map.insert(hex_to_rgb("#000000"), 15);
-
+    let color_map = color_maps.get(&args.colormap).expect("Invalid colormap!");
+    
     if args.img.is_dir() {
         let paths = std::fs::read_dir(&args.img).expect("invalid path specified");
 
@@ -90,7 +112,7 @@ fn main() {
             let mut img = image::open(path.expect("invalid path specified").path()).unwrap();
             img = img.resize(width, height, image::imageops::FilterType::Nearest);
 
-            let img_string = image_to_makecode_string(img, &color_map);
+            let img_string = image_to_makecode_string(img, color_map);
 
             anim_string += &img_string;
             anim_string += ",";
@@ -101,10 +123,11 @@ fn main() {
         fs::write(&args.output, anim_string).unwrap();
         
     } else {
+        
         let mut img = image::open(&args.img).unwrap();
         img = img.resize(width, height, image::imageops::FilterType::Nearest);
     
-        let img_string = image_to_makecode_string(img, &color_map);
+        let img_string = image_to_makecode_string(img, color_map);
     
         fs::write(&args.output, img_string).unwrap();
     }
@@ -132,3 +155,4 @@ fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>
 
     return img_string;
 }
+

@@ -1,0 +1,11 @@
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" } // Ignore whitespaces
+char = _{ ASCII_ALPHANUMERIC }
+num = _{ ASCII_DIGIT+ }
+palette_name = { char+ }
+hex_color = { "#" ~ HEX_DIGIT{6} }
+
+palette_data = _{ ( num? ~ hex_color ){15} }
+
+palette = { palette_name ~ ":" ~ palette_data }
+
+file = { palette+ }

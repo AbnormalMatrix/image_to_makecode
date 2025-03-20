@@ -26,6 +26,9 @@ struct Args {
 
     #[arg(short, long)]
     colormap: String,
+
+    #[arg(short, long)]
+    genmap: bool,
 }
 
 
@@ -36,6 +39,13 @@ fn hex_to_rgb(hex: &str) -> Rgb<u8> {
     let green = (hex_value >> 8 & 0xFF) as u8;
     let blue = (hex_value & 0xFF) as u8;
     Rgb([red, green, blue])
+}
+
+fn rgb_to_hex(rgb: &Rgb<u8>) -> String {
+    let red = rgb[0];
+    let green = rgb[1];
+    let blue = rgb[2];
+    format!("#{:02X}{:02X}{:02X}", red, green, blue)
 }
 
 fn get_nearest_color(pixel: &Rgb<u8>, color_map: &HashMap<Rgb<u8>, i32> ) -> i32 {
@@ -103,6 +113,16 @@ fn main() {
 
     let color_map = color_maps.get(&args.colormap).expect("Invalid colormap!");
     
+    if args.genmap {
+        println!("Genmap");
+        let mut palette_string = String::new();
+        for color in color_map {
+            let color_string = format!("color.setColor({}, color.parseColorString(\"{}\"))\n", color.1, rgb_to_hex(color.0));
+            palette_string += &color_string;
+        }
+        println!("{}", palette_string);
+    }
+
     if args.img.is_dir() {
         let paths = std::fs::read_dir(&args.img).expect("invalid path specified");
 

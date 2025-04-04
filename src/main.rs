@@ -2,7 +2,7 @@ use image::{DynamicImage, GenericImageView, Rgb};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::{fs, process};
-
+use regex::Regex;
 
 use pest::Parser;
 use pest_derive::Parser;
@@ -126,10 +126,29 @@ fn main() {
     if args.img.is_dir() {
         let paths = std::fs::read_dir(&args.img).expect("invalid path specified");
 
+        let re = Regex::new(r"(\d+)").unwrap();
+        let mut files: Vec<(u32, String)> = Vec::new();
+
+        for entry in paths {
+            let entry = entry.unwrap();
+            let file_name = entry.file_name();
+            let file_name = file_name.to_string_lossy().to_string();
+            
+            if let Some(captures) = re.captures(&file_name) {
+                if let Some(number) = captures.get(1) {
+                    if let Ok(num) = number.as_str().parse::<u32>() {
+                        files.push((num, args.img.join(&file_name).to_string_lossy().to_string()));
+                    }
+                }
+            }
+        }
+
+        files.sort_by_key(|k| k.0); // Sort by extracted number
+
         let mut anim_string = "[".to_string();
 
-        for path in paths {
-            let mut img = image::open(path.expect("invalid path specified").path()).unwrap();
+        for (_, path) in files {
+            let mut img = image::open(path).unwrap();
             img = img.resize(width, height, image::imageops::FilterType::Nearest);
 
             let img_string = image_to_makecode_string(img, color_map);

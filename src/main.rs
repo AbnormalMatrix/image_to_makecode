@@ -48,7 +48,14 @@ fn rgb_to_hex(rgb: &Rgb<u8>) -> String {
     format!("#{:02X}{:02X}{:02X}", red, green, blue)
 }
 
-fn get_nearest_color(pixel: &Rgb<u8>, color_map: &HashMap<Rgb<u8>, i32> ) -> i32 {
+fn get_nearest_color(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32> ) -> i32 {
+
+
+    // check if the pixel is transparent
+    if pixel[3] == 0 {
+        return 0;
+    }
+
     let mut lowest_distance = f64::INFINITY;
 
     let mut best_color = 0;
@@ -176,7 +183,7 @@ fn main() {
 
 fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>) -> String {
     
-    let img = img.to_rgb8();
+    let img = img.to_rgba8();
 
     let mut img_string = "img`".to_string();
 

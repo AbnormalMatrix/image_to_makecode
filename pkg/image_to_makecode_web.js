@@ -87,11 +87,12 @@ function passStringToWasm0(arg, malloc, realloc) {
  * @param {number} width
  * @param {number} height
  * @param {boolean} check_transparency
+ * @param {string} conversion_method
  * @returns {string}
  */
-export function load_image(bytes, unparsed_colors, colormap_name, width, height, check_transparency) {
-    let deferred4_0;
-    let deferred4_1;
+export function load_image(bytes, unparsed_colors, colormap_name, width, height, check_transparency, conversion_method) {
+    let deferred5_0;
+    let deferred5_1;
     try {
         const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
@@ -99,12 +100,14 @@ export function load_image(bytes, unparsed_colors, colormap_name, width, height,
         const len1 = WASM_VECTOR_LEN;
         const ptr2 = passStringToWasm0(colormap_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len2 = WASM_VECTOR_LEN;
-        const ret = wasm.load_image(ptr0, len0, ptr1, len1, ptr2, len2, width, height, check_transparency);
-        deferred4_0 = ret[0];
-        deferred4_1 = ret[1];
+        const ptr3 = passStringToWasm0(conversion_method, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ret = wasm.load_image(ptr0, len0, ptr1, len1, ptr2, len2, width, height, check_transparency, ptr3, len3);
+        deferred5_0 = ret[0];
+        deferred5_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 

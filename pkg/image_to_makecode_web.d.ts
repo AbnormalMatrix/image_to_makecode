@@ -1,6 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
-export function load_image(bytes: Uint8Array, unparsed_colors: string, colormap_name: string, width: number, height: number, check_transparency: boolean): string;
+export function load_image(bytes: Uint8Array, unparsed_colors: string, colormap_name: string, width: number, height: number, check_transparency: boolean, conversion_method: string): string;
 export function get_valid_colormaps(unparsed_colors: string): string[];
 export function add(a: number, b: number): number;
 
@@ -8,7 +8,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly load_image: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number];
+  readonly load_image: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => [number, number];
   readonly get_valid_colormaps: (a: number, b: number) => [number, number];
   readonly add: (a: number, b: number) => number;
   readonly __wbindgen_export_0: WebAssembly.Table;

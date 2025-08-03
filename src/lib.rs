@@ -3,6 +3,7 @@ use image::{load_from_memory, DynamicImage, GenericImageView, Rgb};
 use std::collections::HashMap;
 use pest::Parser;
 use pest_derive::Parser;
+use palette::{color_difference::{Ciede2000, HyAb}, IntoColor, Lch, Oklab, Srgb};
 
 #[derive(Parser)]
 #[grammar = "colors.pest"]
@@ -32,6 +33,7 @@ fn get_nearest_color(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>,
         return 0;
     }
 
+
     let mut lowest_distance = f64::INFINITY;
 
     let mut best_color = 0;
@@ -53,7 +55,71 @@ fn get_nearest_color(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>,
     return best_color;
 }
 
-fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool) -> String {
+fn get_nearest_color_hyab(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool ) -> i32 {
+
+
+    // check if the pixel is transparent
+    if check_transparency && pixel[3] == 0 {
+        return 0;
+    }
+
+    let pixel_color = Srgb::new(pixel[0], pixel[1], pixel[2]);
+
+    let mut lowest_distance = f32::INFINITY;
+
+    let mut best_color = 0;
+
+    for (key, value) in color_map.into_iter() {
+
+
+        let test_color = Srgb::new(key[0], key[1], key[2]);
+        let lab_a: Oklab = pixel_color.into_linear().into_color();
+        let lab_b: Oklab = test_color.into_linear().into_color();
+
+        let diff = lab_a.hybrid_distance(lab_b);
+        if diff < lowest_distance {
+            
+            lowest_distance = diff;
+            best_color = value.clone();
+        }
+    }
+    
+    return best_color;
+}
+
+fn get_nearest_color_ciede2000(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool ) -> i32 {
+
+
+    // check if the pixel is transparent
+    if check_transparency && pixel[3] == 0 {
+        return 0;
+    }
+
+    let pixel_color = Srgb::new(pixel[0], pixel[1], pixel[2]);
+
+    let mut lowest_distance = f32::INFINITY;
+
+    let mut best_color = 0;
+
+    for (key, value) in color_map.into_iter() {
+
+
+        let test_color = Srgb::new(key[0], key[1], key[2]);
+        let lab_a: Lch = pixel_color.into_linear().into_color();
+        let lab_b: Lch = test_color.into_linear().into_color();
+
+        let diff = lab_a.difference(lab_b);
+        if diff < lowest_distance {
+            
+            lowest_distance = diff;
+            best_color = value.clone();
+        }
+    }
+    
+    return best_color;
+}
+
+fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool, method: String) -> String {
     
     let img = img.to_rgba8();
 
@@ -62,7 +128,15 @@ fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>
     for py in 0..img.height() {
         let mut x_line = "    ".to_string();
         for px in 0..img.width() {
-            let best_color = get_nearest_color(img.get_pixel(px, py), &color_map, check_transparency);
+            let mut best_color = 0;
+            match method.as_str() {
+                "hyab" => {best_color = get_nearest_color_hyab(img.get_pixel(px, py), &color_map, check_transparency);},
+                "ciede2000" => {best_color = get_nearest_color_ciede2000(img.get_pixel(px, py), &color_map, check_transparency);}
+                "pythagorean" => {best_color = get_nearest_color(img.get_pixel(px, py), &color_map, check_transparency);}
+                _ => {best_color = get_nearest_color(img.get_pixel(px, py), &color_map, check_transparency);}
+            }
+
+
             x_line += &format!("{:x}",best_color);
             x_line += " ";
         }
@@ -103,7 +177,7 @@ pub fn parse_colors(unparsed_colors: String) -> HashMap<String, HashMap<Rgb<u8>,
 }
 
 #[wasm_bindgen]
-pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, width: u32, height: u32, check_transparency: bool) -> String {
+pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, width: u32, height: u32, check_transparency: bool, conversion_method: String) -> String {
     let color_maps= parse_colors(unparsed_colors);
     let color_map = color_maps.get(&colormap_name).expect("Invalid colormap!");
 
@@ -111,7 +185,7 @@ pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, 
 
     img = img.resize(width, height, image::imageops::FilterType::Nearest);
 
-    let img_string = image_to_makecode_string(img, color_map, check_transparency);
+    let img_string = image_to_makecode_string(img, color_map, check_transparency, conversion_method);
     return img_string;
 }
 

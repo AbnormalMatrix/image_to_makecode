@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to MakeCode</title>
+    <script type="module" src="index.js"></script>
+</head>
+<body>
+    <div id="instructions">
+        <ol>
+            <li>Select image</li>
+            <li>Press the copy button</li>
+            <li>Open a blank image in MakeCode Arcade with the correct size</li>
+            <li>Paste the image</li>
+        </ol>
+    </div>
+    <input type="file" id="imageInput" accept="image/*" />
+    <textarea id="colorInput" rows="10" cols="50" placeholder="Enter color data..."></textarea>
+    <input type="text" id="colormapName" value="arcade"></input>
+    <textarea readonly id="output"></textarea>
+    <button id="copyToClipboard">Copy</button>
+</body>
+</html>

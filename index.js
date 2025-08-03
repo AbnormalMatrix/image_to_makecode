@@ -1,4 +1,39 @@
-arcade:
+import init, { load_image, add } from "./pkg/image_to_makecode_web.js";
+
+async function run() {
+    await init(); // This initializes the WASM module
+    window.addNumbers = function(a, b) {
+        console.log(add(a, b));
+    };
+
+    const fileInput = document.getElementById("imageInput")
+    const colorInput = document.getElementById("colorInput")
+    const colormapName = document.getElementById("colormapName")
+    const imgOutputArea = document.getElementById("output")
+    fileInput.addEventListener("change", async () => {
+        const file = fileInput.files[0];
+        if (!file) {
+            return;
+        }
+        const arrayBuffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+
+        const colorText = colorInput.value;
+        const chosenColormap = colormapName.value;
+        try {
+            imgOutputArea.value = load_image(bytes, colorText, chosenColormap, 160, 120);
+        } catch (err) {
+            console.log(err)
+        }
+    })
+
+    const copyButton = document.getElementById("copyToClipboard")
+    copyButton.addEventListener("click", () => {
+        imgOutputArea.select()
+        navigator.clipboard.writeText(imgOutputArea.value)
+    })
+
+    colorInput.value = `arcade:
 1
 #FFFFFF
 2
@@ -338,4 +373,7 @@ grayscale:
 14
 #121212
 15
-#000000
+#000000`
+}
+
+run()

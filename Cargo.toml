@@ -1,12 +1,13 @@
 [package]
-name = "image_to_makecode"
+name = "image_to_makecode_web"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
 
 [dependencies]
-clap = { version = "4.5.28", features = ["derive"] }
-image = "0.25.5"
-palette = "0.7.6"
-pest = "2.7.15"
-pest_derive = "2.7.15"
-regex = "1.11.1"
+image = "0.25.6"
+pest = "2.8.1"
+pest_derive = "2.8.1"
+wasm-bindgen = "0.2.100"

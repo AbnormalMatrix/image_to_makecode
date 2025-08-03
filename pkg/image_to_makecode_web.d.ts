@@ -1,18 +1,21 @@
 /* tslint:disable */
 /* eslint-disable */
-export function load_image(bytes: Uint8Array, unparsed_colors: string, colormap_name: string, width: number, height: number): string;
+export function load_image(bytes: Uint8Array, unparsed_colors: string, colormap_name: string, width: number, height: number, check_transparency: boolean): string;
+export function get_valid_colormaps(unparsed_colors: string): string[];
 export function add(a: number, b: number): number;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly load_image: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number];
+  readonly load_image: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number) => [number, number];
+  readonly get_valid_colormaps: (a: number, b: number) => [number, number];
   readonly add: (a: number, b: number) => number;
   readonly __wbindgen_export_0: WebAssembly.Table;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+  readonly __externref_drop_slice: (a: number, b: number) => void;
   readonly __wbindgen_start: () => void;
 }
 

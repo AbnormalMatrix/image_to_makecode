@@ -1,39 +1,80 @@
-import init, { load_image, add } from "./pkg/image_to_makecode_web.js";
+import init, { load_image, add, get_valid_colormaps } from "./pkg/image_to_makecode_web.js";
 
 async function run() {
     await init(); // This initializes the WASM module
-    window.addNumbers = function(a, b) {
-        console.log(add(a, b));
-    };
+
 
     const fileInput = document.getElementById("imageInput")
     const colorInput = document.getElementById("colorInput")
-    const colormapName = document.getElementById("colormapName")
+    const colormapSelector = document.getElementById("colormapSelect")
     const imgOutputArea = document.getElementById("output")
-    fileInput.addEventListener("change", async () => {
-        const file = fileInput.files[0];
-        if (!file) {
-            return;
-        }
-        const arrayBuffer = await file.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
+    const transparencyCheckbox = document.getElementById("checkTransparency")
+    const widthInput = document.getElementById("widthInput")
+    const heightInput = document.getElementById("heightInput")
 
-        const colorText = colorInput.value;
-        const chosenColormap = colormapName.value;
-        try {
-            imgOutputArea.value = load_image(bytes, colorText, chosenColormap, 160, 120);
-        } catch (err) {
-            console.log(err)
-        }
+    fileInput.addEventListener("change", async () => {
+        generate_image();
     })
 
+    colormapSelector.addEventListener("change", async () => {
+        generate_image();
+    })
+
+    transparencyCheckbox.addEventListener("change", async () => {
+        generate_image();
+    })
+
+    colorInput.addEventListener("input", setColormapSelectOptions )
+
+    widthInput.addEventListener("change", async () => {
+        generate_image()
+    })
+
+    heightInput.addEventListener("change", async () => {
+        generate_image()
+    })
+
+    setup()
+
+}
+
+async function generate_image() {
+    const fileInput = document.getElementById("imageInput")
+    const colorInput = document.getElementById("colorInput")
+    const colormapSelector = document.getElementById("colormapSelect")
+    const imgOutputArea = document.getElementById("output")
+
+    const transparencyCheckbox = document.getElementById("checkTransparency")
+
+    const widthInput = document.getElementById("widthInput")
+    const heightInput = document.getElementById("heightInput")
+
+    const file = fileInput.files[0];
+    if (!file) {
+        return;
+    }
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+
+    const colorText = colorInput.value;
+    const chosenColormap = colormapSelector.value;
+    try {
+        imgOutputArea.value = load_image(bytes, colorText, chosenColormap, widthInput.value, heightInput.value, transparencyCheckbox.value);
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+function setup() {
+    console.log("setting up")
+    const imgOutputArea = document.getElementById("output")
     const copyButton = document.getElementById("copyToClipboard")
     copyButton.addEventListener("click", () => {
         imgOutputArea.select()
         navigator.clipboard.writeText(imgOutputArea.value)
     })
-
-    colorInput.value = `arcade:
+    const colorInput = document.getElementById("colorInput")
+        colorInput.value = `arcade:
 1
 #FFFFFF
 2
@@ -374,6 +415,31 @@ grayscale:
 #121212
 15
 #000000`
+    setColormapSelectOptions();
+}
+
+function setColormapSelectOptions() {
+    const colorInput = document.getElementById("colorInput");
+    const colormapSelector = document.getElementById("colormapSelect");
+    colormapSelector.options.length = 0;
+    try {
+        const validColormaps = get_valid_colormaps(colorInput.value);
+        validColormaps.forEach(cm => {
+            let newOption = document.createElement("option")
+            newOption.value = cm;
+            newOption.text = cm;
+            colormapSelector.add(newOption);
+        });
+        for (let i = 0; i < colormapSelector.options.length; i++) {
+            if (colormapSelector.options[i].text.toLowerCase() === "arcade") {
+                colormapSelector.selectedIndex = i;
+                break;
+            }
+        }
+    } catch (err) {
+        console.log("invalid colormap!");
+    }
+
 }
 
 run()

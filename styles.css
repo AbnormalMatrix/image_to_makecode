@@ -1,0 +1,25 @@
+.section {
+    border: 2px solid black;
+    margin: 10px;
+    padding: 10px;
+}
+
+.instructions {
+    background-color: azure;
+}
+
+.selectImage {
+    background-color: aliceblue;
+}
+
+.selectColor {
+    background-color: beige;
+}
+
+.selectSize {
+    background-color: honeydew;
+}
+
+.output {
+    background-color: seashell;
+}

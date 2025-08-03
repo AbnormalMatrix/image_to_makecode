@@ -24,11 +24,11 @@ fn rgb_to_hex(rgb: &Rgb<u8>) -> String {
     format!("#{:02X}{:02X}{:02X}", red, green, blue)
 }
 
-fn get_nearest_color(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32> ) -> i32 {
+fn get_nearest_color(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool ) -> i32 {
 
 
     // check if the pixel is transparent
-    if pixel[3] == 0 {
+    if check_transparency && pixel[3] == 0 {
         return 0;
     }
 
@@ -53,7 +53,7 @@ fn get_nearest_color(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32> 
     return best_color;
 }
 
-fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>) -> String {
+fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool) -> String {
     
     let img = img.to_rgba8();
 
@@ -62,7 +62,7 @@ fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>
     for py in 0..img.height() {
         let mut x_line = "    ".to_string();
         for px in 0..img.width() {
-            let best_color = get_nearest_color(img.get_pixel(px, py), &color_map);
+            let best_color = get_nearest_color(img.get_pixel(px, py), &color_map, check_transparency);
             x_line += &format!("{:x}",best_color);
             x_line += " ";
         }
@@ -103,7 +103,7 @@ pub fn parse_colors(unparsed_colors: String) -> HashMap<String, HashMap<Rgb<u8>,
 }
 
 #[wasm_bindgen]
-pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, width: u32, height: u32) -> String {
+pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, width: u32, height: u32, check_transparency: bool) -> String {
     let color_maps= parse_colors(unparsed_colors);
     let color_map = color_maps.get(&colormap_name).expect("Invalid colormap!");
 
@@ -111,8 +111,18 @@ pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, 
 
     img = img.resize(width, height, image::imageops::FilterType::Nearest);
 
-    let img_string = image_to_makecode_string(img, color_map);
+    let img_string = image_to_makecode_string(img, color_map, check_transparency);
     return img_string;
+}
+
+#[wasm_bindgen]
+pub fn get_valid_colormaps(unparsed_colors: String) -> Vec<String> {
+    let color_maps= parse_colors(unparsed_colors);
+    let mut colormap_names = Vec::new();
+    for cm in color_maps {
+        colormap_names.push(cm.0);
+    }
+    return colormap_names;
 }
 
 #[wasm_bindgen]

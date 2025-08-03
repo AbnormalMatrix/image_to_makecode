@@ -59,7 +59,8 @@ async function generate_image() {
     const colorText = colorInput.value;
     const chosenColormap = colormapSelector.value;
     try {
-        imgOutputArea.value = load_image(bytes, colorText, chosenColormap, widthInput.value, heightInput.value, transparencyCheckbox.value);
+        console.log(transparencyCheckbox.checked)
+        imgOutputArea.value = load_image(bytes, colorText, chosenColormap, widthInput.value, heightInput.value, transparencyCheckbox.checked);
     } catch (err) {
         console.log(err)
     }

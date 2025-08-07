@@ -1,9 +1,11 @@
 use wasm_bindgen::prelude::*;
-use image::{load_from_memory, DynamicImage, GenericImageView, Rgb};
+use image::{codecs::png, load_from_memory, DynamicImage, GenericImageView, ImageEncoder, Pixel, Rgb, Rgba};
 use std::collections::HashMap;
 use pest::Parser;
 use pest_derive::Parser;
 use palette::{color_difference::{Ciede2000, HyAb}, IntoColor, Lch, Oklab, Srgb};
+use js_sys::{Uint8Array, Object, Reflect};
+
 
 #[derive(Parser)]
 #[grammar = "colors.pest"]
@@ -25,18 +27,28 @@ fn rgb_to_hex(rgb: &Rgb<u8>) -> String {
     format!("#{:02X}{:02X}{:02X}", red, green, blue)
 }
 
-fn get_nearest_color(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool ) -> i32 {
+struct BestColor {
+    color_value: Rgba<u8>,
+    color_number: i32,
+}
+impl BestColor {
+    fn new(color_value: Rgba<u8>, color_number: i32) -> Self {
+        Self { color_value, color_number }
+    }
+}
+
+fn get_nearest_color(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool ) -> BestColor {
 
 
     // check if the pixel is transparent
     if check_transparency && pixel[3] == 0 {
-        return 0;
+        return BestColor::new(pixel.clone(), 0);
     }
 
 
     let mut lowest_distance = f64::INFINITY;
 
-    let mut best_color = 0;
+    let mut best_color = BestColor::new(Rgba([0, 0, 0, 255]), 0);
 
     for (key, value) in color_map.into_iter() {
         let r_diff = key[0] as f64 - pixel[0] as f64;
@@ -48,26 +60,27 @@ fn get_nearest_color(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>,
         if total < lowest_distance {
             
             lowest_distance = total;
-            best_color = value.clone();
+            // best_color = value.clone();
+            best_color = BestColor::new(key.clone().to_rgba(), value.clone());
         }
     }
     
     return best_color;
 }
 
-fn get_nearest_color_hyab(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool ) -> i32 {
+fn get_nearest_color_hyab(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool ) -> BestColor {
 
 
     // check if the pixel is transparent
     if check_transparency && pixel[3] == 0 {
-        return 0;
+        return BestColor::new(pixel.clone(), 0);
     }
 
     let pixel_color = Srgb::new(pixel[0], pixel[1], pixel[2]);
 
     let mut lowest_distance = f32::INFINITY;
 
-    let mut best_color = 0;
+    let mut best_color = BestColor::new(Rgba([0, 0, 0, 255]), 0);
 
     for (key, value) in color_map.into_iter() {
 
@@ -80,26 +93,26 @@ fn get_nearest_color_hyab(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, 
         if diff < lowest_distance {
             
             lowest_distance = diff;
-            best_color = value.clone();
+            best_color = BestColor::new(key.clone().to_rgba(), value.clone());
         }
     }
     
     return best_color;
 }
 
-fn get_nearest_color_ciede2000(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool ) -> i32 {
+fn get_nearest_color_ciede2000(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool ) -> BestColor {
 
 
     // check if the pixel is transparent
     if check_transparency && pixel[3] == 0 {
-        return 0;
+        return BestColor::new(pixel.clone(), 0);
     }
 
     let pixel_color = Srgb::new(pixel[0], pixel[1], pixel[2]);
 
     let mut lowest_distance = f32::INFINITY;
 
-    let mut best_color = 0;
+    let mut best_color = BestColor::new(Rgba([0, 0, 0, 255]), 0);
 
     for (key, value) in color_map.into_iter() {
 
@@ -112,15 +125,17 @@ fn get_nearest_color_ciede2000(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<
         if diff < lowest_distance {
             
             lowest_distance = diff;
-            best_color = value.clone();
+            best_color = BestColor::new(key.clone().to_rgba(), value.clone());
         }
     }
     
     return best_color;
 }
 
-fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool, method: String) -> String {
+fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool, method: String) -> (String, image::ImageBuffer<Rgba<u8>, Vec<u8>>) {
     
+    let mut preview_img = image::RgbaImage::new(img.width(), img.height());
+
     let img = img.to_rgba8();
 
     let mut img_string = "img`".to_string();
@@ -128,16 +143,17 @@ fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>
     for py in 0..img.height() {
         let mut x_line = "    ".to_string();
         for px in 0..img.width() {
-            let mut best_color = 0;
+            let mut best_color = BestColor::new(Rgba([0, 0, 0, 255]), 0);
             match method.as_str() {
                 "hyab" => {best_color = get_nearest_color_hyab(img.get_pixel(px, py), &color_map, check_transparency);},
                 "ciede2000" => {best_color = get_nearest_color_ciede2000(img.get_pixel(px, py), &color_map, check_transparency);}
                 "pythagorean" => {best_color = get_nearest_color(img.get_pixel(px, py), &color_map, check_transparency);}
                 _ => {best_color = get_nearest_color(img.get_pixel(px, py), &color_map, check_transparency);}
             }
+            preview_img.put_pixel(px, py, best_color.color_value);
 
 
-            x_line += &format!("{:x}",best_color);
+            x_line += &format!("{:x}",best_color.color_number);
             x_line += " ";
         }
         x_line += &"\n".to_string();
@@ -145,7 +161,7 @@ fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>
     }
     img_string += "`";
 
-    return img_string;
+    return (img_string, preview_img);
 }
 
 
@@ -177,7 +193,7 @@ pub fn parse_colors(unparsed_colors: String) -> HashMap<String, HashMap<Rgb<u8>,
 }
 
 #[wasm_bindgen]
-pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, width: u32, height: u32, check_transparency: bool, conversion_method: String) -> String {
+pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, width: u32, height: u32, check_transparency: bool, conversion_method: String) -> JsValue  {
     let color_maps= parse_colors(unparsed_colors);
     let color_map = color_maps.get(&colormap_name).expect("Invalid colormap!");
 
@@ -185,8 +201,19 @@ pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, 
 
     img = img.resize(width, height, image::imageops::FilterType::Nearest);
 
-    let img_string = image_to_makecode_string(img, color_map, check_transparency, conversion_method);
-    return img_string;
+    let converted_img = image_to_makecode_string(img, color_map, check_transparency, conversion_method);
+    let makecode_string = converted_img.0;
+    let png_img = converted_img.1;
+
+    let mut buffer = Vec::new();
+    image::codecs::png::PngEncoder::new(&mut buffer).write_image(&png_img, png_img.width(), png_img.height(), image::ColorType::Rgba8.into()).unwrap();
+    
+    let img_data = Uint8Array::from(buffer.as_slice());
+
+    let obj = Object::new();
+    Reflect::set(&obj, &JsValue::from_str("pngdata"), &img_data).unwrap();
+    Reflect::set(&obj, &JsValue::from_str("makecodedata"), &JsValue::from_str(&makecode_string)).unwrap();
+    return obj.into();
 }
 
 #[wasm_bindgen]

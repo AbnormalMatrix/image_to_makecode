@@ -23,3 +23,7 @@
 .output {
     background-color: seashell;
 }
+
+img {
+    image-rendering: pixelated;
+}

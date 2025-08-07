@@ -12,6 +12,8 @@ async function run() {
     const widthInput = document.getElementById("widthInput")
     const heightInput = document.getElementById("heightInput")
 
+    const conversionMethodSelect = document.getElementById("conversionMethodSelect")
+
     fileInput.addEventListener("change", async () => {
         generate_image();
     })
@@ -34,6 +36,11 @@ async function run() {
         generate_image()
     })
 
+    conversionMethodSelect.addEventListener("change", async () => {
+        generate_image()
+    })
+
+
     setup()
 
 }
@@ -49,6 +56,8 @@ async function generate_image() {
     const widthInput = document.getElementById("widthInput")
     const heightInput = document.getElementById("heightInput")
 
+    const outputImg = document.getElementById("outputImg")
+
     const file = fileInput.files[0];
     if (!file) {
         return;
@@ -61,8 +70,13 @@ async function generate_image() {
 
     const conversionMethod = document.getElementById("conversionMethodSelect").value
     try {
-        console.log(conversionMethod)
-        imgOutputArea.value = load_image(bytes, colorText, chosenColormap, widthInput.value, heightInput.value, transparencyCheckbox.checked, conversionMethod);
+        const result = load_image(bytes, colorText, chosenColormap, widthInput.value, heightInput.value, transparencyCheckbox.checked, conversionMethod);
+        imgOutputArea.value = result.makecodedata;
+        const imgData = new Uint8Array(result.pngdata);
+        const blob = new Blob([imgData], { type: "image/png" });
+        const url = URL.createObjectURL(blob);
+        outputImg.src = url;
+
     } catch (err) {
         console.log(err)
     }

@@ -6,6 +6,7 @@ use pest_derive::Parser;
 use palette::{color_difference::{Ciede2000, HyAb}, IntoColor, Lch, Oklab, Srgb};
 use js_sys::{Uint8Array, Object, Reflect};
 
+mod median_cut;
 
 #[derive(Parser)]
 #[grammar = "colors.pest"]
@@ -217,6 +218,25 @@ pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, 
 }
 
 #[wasm_bindgen]
+pub fn generate_palette_from_img(bytes: &[u8]) -> String {
+    let img = load_from_memory(bytes).expect("failed to load image");
+    let img = img.to_rgb8();
+
+    // get the colors
+    let pixels: Vec<Rgb<u8>> = img.pixels().map(|p| Rgb([p[0], p[1], p[2]])).collect();
+
+    let color_palette = median_cut::generate_palette(pixels);
+
+    // convert to a human readable string
+    let mut color_palette_string = "image:\n".to_string();
+    for color in color_palette {
+        color_palette_string = format!("{}{}\n", color_palette_string, rgb_to_hex(&color));
+    }
+
+    return color_palette_string;
+}
+
+#[wasm_bindgen]
 pub fn get_valid_colormaps(unparsed_colors: String) -> Vec<String> {
     let color_maps= parse_colors(unparsed_colors);
     let mut colormap_names = Vec::new();
@@ -230,3 +250,4 @@ pub fn get_valid_colormaps(unparsed_colors: String) -> Vec<String> {
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
+

@@ -1,6 +1,7 @@
-import init, { load_image, add, get_valid_colormaps } from "./pkg/image_to_makecode_web.js";
+import init, { load_image, add, get_valid_colormaps, generate_palette_from_img } from "./pkg/image_to_makecode_web.js";
 
 async function run() {
+    
     await init(); // This initializes the WASM module
 
 
@@ -82,8 +83,37 @@ async function generate_image() {
     }
 }
 
+async function gen_palette() {
+    const fileInput = document.getElementById("imageInput")
+    const file = fileInput.files[0];
+    if (!file) {
+        return;
+    }
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+
+    const result = generate_palette_from_img(bytes);
+    const colorInput = document.getElementById("colorInput")
+    colorInput.value += "\n" + result;
+    setColormapSelectOptions();
+    const colormapSelector = document.getElementById("colormapSelect");
+    for (let i = 0; i < colormapSelector.options.length; i++) {
+        if (colormapSelector.options[i].text.toLowerCase() === "image") {
+            colormapSelector.selectedIndex = i;
+            break;
+        }
+    }
+    generate_image();
+}
+
 function setup() {
     console.log("setting up")
+    
+    const gen_palette_btn = document.getElementById("genPalette");
+    gen_palette_btn.addEventListener("click", () => {
+        gen_palette();
+    });
+
     const imgOutputArea = document.getElementById("output")
     const copyButton = document.getElementById("copyToClipboard")
     copyButton.addEventListener("click", () => {

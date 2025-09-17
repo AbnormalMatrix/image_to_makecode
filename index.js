@@ -56,7 +56,7 @@ async function generate_image() {
 
     const widthInput = document.getElementById("widthInput")
     const heightInput = document.getElementById("heightInput")
-
+    const colormapgenOutput = document.getElementById("colormapgenOutput");
     const outputImg = document.getElementById("outputImg")
 
     const file = fileInput.files[0];
@@ -72,8 +72,10 @@ async function generate_image() {
     const conversionMethod = document.getElementById("conversionMethodSelect").value
     try {
         const result = load_image(bytes, colorText, chosenColormap, widthInput.value, heightInput.value, transparencyCheckbox.checked, conversionMethod);
+
         imgOutputArea.value = result.makecodedata;
         const imgData = new Uint8Array(result.pngdata);
+        colormapgenOutput.value = result.colormapgen;
         const blob = new Blob([imgData], { type: "image/png" });
         const url = URL.createObjectURL(blob);
         outputImg.src = url;
@@ -119,6 +121,12 @@ function setup() {
     copyButton.addEventListener("click", () => {
         imgOutputArea.select()
         navigator.clipboard.writeText(imgOutputArea.value)
+    })
+    const colormapgenOutput = document.getElementById("colormapgenOutput");
+    const copyColormapButton = document.getElementById("copycolormapgenToClipboard");
+    copyColormapButton.addEventListener("click", () => {
+        colormapgenOutput.select()
+        navigator.clipboard.writeText(colormapgenOutput.value)
     })
     const colorInput = document.getElementById("colorInput")
         colorInput.value = `arcade:

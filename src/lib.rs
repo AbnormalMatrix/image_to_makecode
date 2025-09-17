@@ -214,6 +214,16 @@ pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, 
     let obj = Object::new();
     Reflect::set(&obj, &JsValue::from_str("pngdata"), &img_data).unwrap();
     Reflect::set(&obj, &JsValue::from_str("makecodedata"), &JsValue::from_str(&makecode_string)).unwrap();
+    
+    // generate code to set the color palette inside makecode
+    let mut palette_string = String::new();
+    for color in color_map {
+        let color_string = format!("color.setColor({}, color.parseColorString(\"{}\"))\n", color.1, rgb_to_hex(color.0));
+        palette_string += &color_string;
+    }
+
+    Reflect::set(&obj, &JsValue::from_str("colormapgen"), &JsValue::from_str(&palette_string)).unwrap();
+    
     return obj.into();
 }
 

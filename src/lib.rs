@@ -1,10 +1,12 @@
+use log::info;
 use wasm_bindgen::prelude::*;
-use image::{codecs::png, load_from_memory, DynamicImage, GenericImageView, ImageEncoder, Pixel, Rgb, Rgba};
+use image::{AnimationDecoder, DynamicImage, GenericImageView, ImageEncoder, Pixel, Rgb, Rgba, codecs::{gif::GifDecoder, png}, guess_format, load_from_memory};
 use std::collections::HashMap;
 use pest::Parser;
 use pest_derive::Parser;
 use palette::{color_difference::{Ciede2000, HyAb}, IntoColor, Lch, Oklab, Srgb};
 use js_sys::{Uint8Array, Object, Reflect};
+use std::io::Cursor;
 
 mod median_cut;
 
@@ -133,7 +135,7 @@ fn get_nearest_color_ciede2000(pixel: &image::Rgba<u8>, color_map: &HashMap<Rgb<
     return best_color;
 }
 
-fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool, method: String) -> (String, image::ImageBuffer<Rgba<u8>, Vec<u8>>) {
+fn image_to_makecode_string(img: DynamicImage, color_map: &HashMap<Rgb<u8>, i32>, check_transparency: bool, method: &String) -> (String, image::ImageBuffer<Rgba<u8>, Vec<u8>>) {
     
     let mut preview_img = image::RgbaImage::new(img.width(), img.height());
 
@@ -195,14 +197,70 @@ pub fn parse_colors(unparsed_colors: String) -> HashMap<String, HashMap<Rgb<u8>,
 
 #[wasm_bindgen]
 pub fn load_image(bytes: &[u8], unparsed_colors: String, colormap_name: String, width: u32, height: u32, check_transparency: bool, conversion_method: String) -> JsValue  {
+    
+    
     let color_maps= parse_colors(unparsed_colors);
     let color_map = color_maps.get(&colormap_name).expect("Invalid colormap!");
+
+    // guess the image format
+    let img_format_guess = guess_format(bytes).expect("Failed to guess image format!");
+    
+    info!("Guessed image format: {:#?}", img_format_guess);
+
+    if img_format_guess == image::ImageFormat::Gif {
+        let cursor = Cursor::new(bytes);
+        let decoder = GifDecoder::new(cursor).expect("Failed to initialize gif decoder");
+        let frames = decoder.into_frames().collect_frames().expect("Failed to get frames from gif");
+        
+        let frame_count = frames.len().clone();
+        info!("Converting {} frames", frame_count);
+
+        // create a string that will hold the frames
+        let mut anim_string = "[".to_string();
+        // get the first frame for the preview
+        let mut first_frame = DynamicImage::ImageRgba8(frames[0].clone().into_buffer());
+
+        // loop through the frames in the gif
+        for (index, frame) in frames.into_iter().enumerate() {
+            let mut img = DynamicImage::ImageRgba8(frame.into_buffer());
+            img = img.resize(width, height, image::imageops::FilterType::Nearest);
+            let converted_img = image_to_makecode_string(img, color_map, check_transparency, &conversion_method);
+            let makecode_string = converted_img.0;
+            anim_string += &makecode_string;
+            anim_string += ",";
+            info!("{}%", ((index + 1) as f32 / frame_count as f32) * 100.0);
+        }
+        anim_string += "]";
+        
+
+        first_frame = first_frame.resize(width, height, image::imageops::FilterType::Nearest);
+        let converted_img = image_to_makecode_string(first_frame, color_map, check_transparency, &conversion_method);
+        let png_img = converted_img.1;
+        let mut buffer = Vec::new();
+        image::codecs::png::PngEncoder::new(&mut buffer).write_image(&png_img, png_img.width(), png_img.height(), image::ColorType::Rgba8.into()).unwrap();
+
+        let img_data = Uint8Array::from(buffer.as_slice());
+        let obj = Object::new();
+        Reflect::set(&obj, &JsValue::from_str("pngdata"), &img_data).unwrap();
+        Reflect::set(&obj, &JsValue::from_str("makecodedata"), &JsValue::from_str(&anim_string)).unwrap();
+        
+        // generate code to set the color palette inside makecode
+        let mut palette_string = String::new();
+        for color in color_map {
+            let color_string = format!("color.setColor({}, color.parseColorString(\"{}\"))\n", color.1, rgb_to_hex(color.0));
+            palette_string += &color_string;
+        }
+
+        Reflect::set(&obj, &JsValue::from_str("colormapgen"), &JsValue::from_str(&palette_string)).unwrap();
+        
+        return obj.into();
+    }
 
     let mut img = load_from_memory(bytes).expect("failed to load image");
 
     img = img.resize(width, height, image::imageops::FilterType::Nearest);
 
-    let converted_img = image_to_makecode_string(img, color_map, check_transparency, conversion_method);
+    let converted_img = image_to_makecode_string(img, color_map, check_transparency, &conversion_method);
     let makecode_string = converted_img.0;
     let png_img = converted_img.1;
 
@@ -261,3 +319,8 @@ pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
 
+#[wasm_bindgen(start)]
+pub fn start() {
+    let _ = console_log::init_with_level(log::Level::Debug);
+    info!("Wasm started!");
+}

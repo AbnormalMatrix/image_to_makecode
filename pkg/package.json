@@ -1,12 +1,13 @@
 {
   "name": "image_to_makecode_web",
+  "type": "module",
   "version": "0.1.0",
   "files": [
     "image_to_makecode_web_bg.wasm",
     "image_to_makecode_web.js",
     "image_to_makecode_web.d.ts"
   ],
-  "module": "image_to_makecode_web.js",
+  "main": "image_to_makecode_web.js",
   "types": "image_to_makecode_web.d.ts",
   "sideEffects": [
     "./snippets/*"

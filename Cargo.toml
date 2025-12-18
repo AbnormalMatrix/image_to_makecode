@@ -7,8 +7,10 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
+console_log = "1.0.0"
 image = { version = "0.25.6", features = ["png"] }
 js-sys = "0.3.77"
+log = "0.4.29"
 palette = "0.7.6"
 pest = "2.8.1"
 pest_derive = "2.8.1"

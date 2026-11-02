@@ -1,10 +1,10 @@
 /* tslint:disable */
 /* eslint-disable */
-export function load_image(bytes: Uint8Array, unparsed_colors: string, colormap_name: string, width: number, height: number, check_transparency: boolean, conversion_method: string): any;
-export function start(): void;
+export function load_image(bytes: Uint8Array, unparsed_colors: string, colormap_name: string, width: number, height: number, check_transparency: boolean, conversion_method: string, dithering: boolean): any;
 export function generate_palette_from_img(bytes: Uint8Array): string;
 export function get_valid_colormaps(unparsed_colors: string): string[];
 export function add(a: number, b: number): number;
+export function start(): void;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
@@ -13,7 +13,7 @@ export interface InitOutput {
   readonly add: (a: number, b: number) => number;
   readonly generate_palette_from_img: (a: number, b: number) => [number, number];
   readonly get_valid_colormaps: (a: number, b: number) => [number, number];
-  readonly load_image: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => any;
+  readonly load_image: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number, l: number) => any;
   readonly start: () => void;
   readonly __wbindgen_exn_store: (a: number) => void;
   readonly __externref_table_alloc: () => number;

@@ -24,23 +24,47 @@
     <div class="selectColor section">
         <p>
             Palette: <select id="colormapSelect"></select>
+            <span class="tooltip-container">
+                ?
+                <span class="tooltip-text">
+                    Select the color palette you are using in MakeCode. Add a custom palette below or generate one based on your image by clicking 'generate palette'
+                </span>
+            </span>
         </p>
         <details>
             <summary>custom palette</summary>
             <textarea id="colorInput" rows="10" cols="50" placeholder="Enter color data..."></textarea>
         </details>
+        <button id="genPalette">Generate Palette</button>
         <p>
             Check for transparency? <input type="checkbox" checked="true" id="checkTransparency">
+            <span class="tooltip-container">
+                ?
+                <span class="tooltip-text">if enabled, transparency in the input image will be included in the output image</span>
+            </span>
         </p>
         <p>
-            conversion method:
+            Conversion method:
             <select id="conversionMethodSelect">
                 <option value="pythagorean">Pythagorean</option>
-                <option value="ciede2000">Ciede2000</option>
+                <option value="ciede2000" selected>Ciede2000</option>
                 <option value="hyab">HyAb</option>
             </select>
+            <span class="tooltip-container">
+                ?
+                <span class="tooltip-text">
+                    Alternative methods for calculating color difference. Usually Ciede2000 is the best (but also slowest).
+                </span>
+            </span>
         </p>
-        <button id="genPalette">Generate Palette</button>
+        <p>
+            Apply dithering? <input type="checkbox" id="applyDithering">
+            <span class="tooltip-container">
+                ?
+                <span class="tooltip-text">Apply Floyd-Steinberg dithering to the image. Can help with gradients in large (output) images.</span>
+            </span>
+        </p>
+        
     </div>
     
     

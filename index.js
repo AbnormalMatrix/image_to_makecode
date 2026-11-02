@@ -1,135 +1,159 @@
-import init, { load_image, add, get_valid_colormaps, generate_palette_from_img } from "./pkg/image_to_makecode_web.js";
+import init, {
+  load_image,
+  add,
+  get_valid_colormaps,
+  generate_palette_from_img,
+} from "./pkg/image_to_makecode_web.js";
 
 async function run() {
-    
-    await init(); // This initializes the WASM module
+  await init(); // This initializes the WASM module
 
+  const fileInput = document.getElementById("imageInput");
+  const colorInput = document.getElementById("colorInput");
+  const colormapSelector = document.getElementById("colormapSelect");
+  const imgOutputArea = document.getElementById("output");
+  const transparencyCheckbox = document.getElementById("checkTransparency");
+  const widthInput = document.getElementById("widthInput");
+  const heightInput = document.getElementById("heightInput");
 
-    const fileInput = document.getElementById("imageInput")
-    const colorInput = document.getElementById("colorInput")
-    const colormapSelector = document.getElementById("colormapSelect")
-    const imgOutputArea = document.getElementById("output")
-    const transparencyCheckbox = document.getElementById("checkTransparency")
-    const widthInput = document.getElementById("widthInput")
-    const heightInput = document.getElementById("heightInput")
+  const applyDitheringCheckbox = document.getElementById("applyDithering");
 
-    const conversionMethodSelect = document.getElementById("conversionMethodSelect")
+  const conversionMethodSelect = document.getElementById(
+    "conversionMethodSelect",
+  );
 
-    fileInput.addEventListener("change", async () => {
-        generate_image();
-    })
+  fileInput.addEventListener("change", async () => {
+    generate_image();
+  });
 
-    colormapSelector.addEventListener("change", async () => {
-        generate_image();
-    })
+  colormapSelector.addEventListener("change", async () => {
+    generate_image();
+  });
 
-    transparencyCheckbox.addEventListener("change", async () => {
-        generate_image();
-    })
+  transparencyCheckbox.addEventListener("change", async () => {
+    generate_image();
+  });
 
-    colorInput.addEventListener("input", setColormapSelectOptions )
+  colorInput.addEventListener("input", setColormapSelectOptions);
 
-    widthInput.addEventListener("change", async () => {
-        generate_image()
-    })
+  widthInput.addEventListener("change", async () => {
+    generate_image();
+  });
 
-    heightInput.addEventListener("change", async () => {
-        generate_image()
-    })
+  heightInput.addEventListener("change", async () => {
+    generate_image();
+  });
 
-    conversionMethodSelect.addEventListener("change", async () => {
-        generate_image()
-    })
+  conversionMethodSelect.addEventListener("change", async () => {
+    generate_image();
+  });
 
+  applyDitheringCheckbox.addEventListener("change", async () => {
+    generate_image();
+  });
 
-    setup()
-
+  setup();
 }
 
 async function generate_image() {
-    const fileInput = document.getElementById("imageInput")
-    const colorInput = document.getElementById("colorInput")
-    const colormapSelector = document.getElementById("colormapSelect")
-    const imgOutputArea = document.getElementById("output")
+  const fileInput = document.getElementById("imageInput");
+  const colorInput = document.getElementById("colorInput");
+  const colormapSelector = document.getElementById("colormapSelect");
+  const imgOutputArea = document.getElementById("output");
 
-    const transparencyCheckbox = document.getElementById("checkTransparency")
+  const transparencyCheckbox = document.getElementById("checkTransparency");
+  const applyDitheringCheckbox = document.getElementById("applyDithering");
 
-    const widthInput = document.getElementById("widthInput")
-    const heightInput = document.getElementById("heightInput")
-    const colormapgenOutput = document.getElementById("colormapgenOutput");
-    const outputImg = document.getElementById("outputImg")
+  const widthInput = document.getElementById("widthInput");
+  const heightInput = document.getElementById("heightInput");
+  const colormapgenOutput = document.getElementById("colormapgenOutput");
+  const outputImg = document.getElementById("outputImg");
 
-    const file = fileInput.files[0];
-    if (!file) {
-        return;
-    }
-    const arrayBuffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
+  const file = fileInput.files[0];
+  if (!file) {
+    return;
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
 
-    const colorText = colorInput.value;
-    const chosenColormap = colormapSelector.value;
+  const colorText = colorInput.value;
+  const chosenColormap = colormapSelector.value;
 
-    const conversionMethod = document.getElementById("conversionMethodSelect").value
-    try {
-        const result = load_image(bytes, colorText, chosenColormap, widthInput.value, heightInput.value, transparencyCheckbox.checked, conversionMethod);
+  const applyDithering = applyDitheringCheckbox.checked;
 
-        imgOutputArea.value = result.makecodedata;
-        const imgData = new Uint8Array(result.pngdata);
-        colormapgenOutput.value = result.colormapgen;
-        const blob = new Blob([imgData], { type: "image/png" });
-        const url = URL.createObjectURL(blob);
-        outputImg.src = url;
+  const conversionMethod = document.getElementById(
+    "conversionMethodSelect",
+  ).value;
+  try {
+    const result = load_image(
+      bytes,
+      colorText,
+      chosenColormap,
+      widthInput.value,
+      heightInput.value,
+      transparencyCheckbox.checked,
+      conversionMethod,
+      applyDithering,
+    );
 
-    } catch (err) {
-        console.log(err)
-    }
+    imgOutputArea.value = result.makecodedata;
+    const imgData = new Uint8Array(result.pngdata);
+    colormapgenOutput.value = result.colormapgen;
+    const blob = new Blob([imgData], { type: "image/png" });
+    const url = URL.createObjectURL(blob);
+    outputImg.src = url;
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 async function gen_palette() {
-    const fileInput = document.getElementById("imageInput")
-    const file = fileInput.files[0];
-    if (!file) {
-        return;
-    }
-    const arrayBuffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
+  const fileInput = document.getElementById("imageInput");
+  const file = fileInput.files[0];
+  if (!file) {
+    return;
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
 
-    const result = generate_palette_from_img(bytes);
-    const colorInput = document.getElementById("colorInput")
-    colorInput.value += "\n" + result;
-    setColormapSelectOptions();
-    const colormapSelector = document.getElementById("colormapSelect");
-    for (let i = 0; i < colormapSelector.options.length; i++) {
-        if (colormapSelector.options[i].text.toLowerCase() === "image") {
-            colormapSelector.selectedIndex = i;
-            break;
-        }
+  const result = generate_palette_from_img(bytes);
+  const colorInput = document.getElementById("colorInput");
+  colorInput.value += "\n" + result;
+  setColormapSelectOptions();
+  const colormapSelector = document.getElementById("colormapSelect");
+  for (let i = 0; i < colormapSelector.options.length; i++) {
+    if (colormapSelector.options[i].text.toLowerCase() === "image") {
+      colormapSelector.selectedIndex = i;
+      break;
     }
-    generate_image();
+  }
+  generate_image();
 }
 
 function setup() {
-    console.log("setting up")
-    
-    const gen_palette_btn = document.getElementById("genPalette");
-    gen_palette_btn.addEventListener("click", () => {
-        gen_palette();
-    });
+  console.log("setting up");
 
-    const imgOutputArea = document.getElementById("output")
-    const copyButton = document.getElementById("copyToClipboard")
-    copyButton.addEventListener("click", () => {
-        imgOutputArea.select()
-        navigator.clipboard.writeText(imgOutputArea.value)
-    })
-    const colormapgenOutput = document.getElementById("colormapgenOutput");
-    const copyColormapButton = document.getElementById("copycolormapgenToClipboard");
-    copyColormapButton.addEventListener("click", () => {
-        colormapgenOutput.select()
-        navigator.clipboard.writeText(colormapgenOutput.value)
-    })
-    const colorInput = document.getElementById("colorInput")
-        colorInput.value = `arcade:
+  const gen_palette_btn = document.getElementById("genPalette");
+  gen_palette_btn.addEventListener("click", () => {
+    gen_palette();
+  });
+
+  const imgOutputArea = document.getElementById("output");
+  const copyButton = document.getElementById("copyToClipboard");
+  copyButton.addEventListener("click", () => {
+    imgOutputArea.select();
+    navigator.clipboard.writeText(imgOutputArea.value);
+  });
+  const colormapgenOutput = document.getElementById("colormapgenOutput");
+  const copyColormapButton = document.getElementById(
+    "copycolormapgenToClipboard",
+  );
+  copyColormapButton.addEventListener("click", () => {
+    colormapgenOutput.select();
+    navigator.clipboard.writeText(colormapgenOutput.value);
+  });
+  const colorInput = document.getElementById("colorInput");
+  colorInput.value = `arcade:
 1
 #FFFFFF
 2
@@ -469,32 +493,31 @@ grayscale:
 14
 #121212
 15
-#000000`
-    setColormapSelectOptions();
+#000000`;
+  setColormapSelectOptions();
 }
 
 function setColormapSelectOptions() {
-    const colorInput = document.getElementById("colorInput");
-    const colormapSelector = document.getElementById("colormapSelect");
-    colormapSelector.options.length = 0;
-    try {
-        const validColormaps = get_valid_colormaps(colorInput.value);
-        validColormaps.forEach(cm => {
-            let newOption = document.createElement("option")
-            newOption.value = cm;
-            newOption.text = cm;
-            colormapSelector.add(newOption);
-        });
-        for (let i = 0; i < colormapSelector.options.length; i++) {
-            if (colormapSelector.options[i].text.toLowerCase() === "arcade") {
-                colormapSelector.selectedIndex = i;
-                break;
-            }
-        }
-    } catch (err) {
-        console.log("invalid colormap!");
+  const colorInput = document.getElementById("colorInput");
+  const colormapSelector = document.getElementById("colormapSelect");
+  colormapSelector.options.length = 0;
+  try {
+    const validColormaps = get_valid_colormaps(colorInput.value);
+    validColormaps.forEach((cm) => {
+      let newOption = document.createElement("option");
+      newOption.value = cm;
+      newOption.text = cm;
+      colormapSelector.add(newOption);
+    });
+    for (let i = 0; i < colormapSelector.options.length; i++) {
+      if (colormapSelector.options[i].text.toLowerCase() === "arcade") {
+        colormapSelector.selectedIndex = i;
+        break;
+      }
     }
-
+  } catch (err) {
+    console.log("invalid colormap!");
+  }
 }
 
-run()
+run();

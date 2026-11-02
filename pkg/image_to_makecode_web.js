@@ -177,9 +177,10 @@ function passArray8ToWasm0(arg, malloc) {
  * @param {number} height
  * @param {boolean} check_transparency
  * @param {string} conversion_method
+ * @param {boolean} dithering
  * @returns {any}
  */
-export function load_image(bytes, unparsed_colors, colormap_name, width, height, check_transparency, conversion_method) {
+export function load_image(bytes, unparsed_colors, colormap_name, width, height, check_transparency, conversion_method, dithering) {
     const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(unparsed_colors, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -188,12 +189,8 @@ export function load_image(bytes, unparsed_colors, colormap_name, width, height,
     const len2 = WASM_VECTOR_LEN;
     const ptr3 = passStringToWasm0(conversion_method, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.load_image(ptr0, len0, ptr1, len1, ptr2, len2, width, height, check_transparency, ptr3, len3);
+    const ret = wasm.load_image(ptr0, len0, ptr1, len1, ptr2, len2, width, height, check_transparency, ptr3, len3, dithering);
     return ret;
-}
-
-export function start() {
-    wasm.start();
 }
 
 /**
@@ -246,6 +243,10 @@ export function get_valid_colormaps(unparsed_colors) {
 export function add(a, b) {
     const ret = wasm.add(a, b);
     return ret;
+}
+
+export function start() {
+    wasm.start();
 }
 
 async function __wbg_load(module, imports) {
